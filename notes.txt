@@ -1,0 +1,259 @@
+04/19/2018
+
+Prerequisites of ML using Tensorflow:
+1) Pandas - pandas is a columnar data analysis API used for handling and analysing input data.
+	- we can create a dataframe by mapping dict type:
+	data=pd.DataFrame({'City': city_names, 'Population': population}) - where city_names and population are of type pd.Series
+	- we can directly create pd dataframe by :
+	california_dataset=pd.read_csv("https://storage.googleapis.com/mledu-datasets/california_housing_train.csv", sep=",")
+	- use california_dataset.describe() to see the summary of each column.
+	- we can use california_dataset.hist('column') to visualise histogram of a particular column.
+	
+	Accessing data:
+	- to access element of a dataframe, use california_dataset['column'] --> In R, california_dataset$column
+	- to access particular element in a column, california_dataset['column'][1] --> In R, california_dataset$column[1]
+	- to access range of elements, california_dataset[0:2] --> In R, california_dataset[0:2,]
+	
+	Manipulating data: We can use numpy API for scientific computing.
+	- We often use pandas series object as an argument to numpy functions - np.log(data['column'])
+	- For more complex columnar operation, Series.apply function is used. It takes lambda as a parameter to apply the function to 
+	  every value in the series. cities['is_saint'] = cities['City name'].apply(lambda x:'San' in x)
+	- We can create a new column for a dataframe by california_dataset['area'] = pd.Series([46.87, 176.53, 97.92])
+	
+	Indexing:
+	- While creation of pandas dataframe, index will be assigned by default.
+	- We can use california_dataset.index to retrieve the indexes of a dataframe.
+	- We can use reindex to shuffle the dataframe. california_dataset.reindex[2,0,1]
+	- One great way to shuffle the dataset is to use california_dataset.reindex(np.random.permutation(california_dataset.index))
+	
+	
+04/20/2018
+
+Overview of tensorflow program:
+	- Tensorflow is a graph data structure with nodes(operations) and edges(tensors). Tensors are variable or constants which are of arbitrary dim.
+	- Tensorflow programming is a two step process:
+			- Assemble constants, variables and operations within a graph.
+			- Evaluate those within a session. ( Both constants and variables are also operations).
+	
+	Tensorflow program to add 2 numbers:
+			import tensorflow as tf
+			g=tf.Graph()
+			with g.as_default():
+				a=tf.constant(10,name="x_const")
+				b=tf.constant(20, name="y_const")
+				sum=tf.add(a,b,name="a_b_sum")
+				
+			with tf.session() as sess:
+				print sum.eval()
+				print a.eval()
+				
+	- We need to call eval() method to evaluate a particular tensor. If we just call the variale name, it'll return a tensor object.
+			- print x.eval(), print sum.eval()
+	
+	- We can evaluate the final operation directly to automatically evaluate the previous operations. No need to call every predecessor operation.
+			- sum1=tf.add(x,y)
+			  z=tf.constant(5)
+			  sum2=tf.add(sum1,z)
+			  print sum2.eval() --> will automatically evaluate sum1.
+	
+04/23/2018 - Creating and Manipulating tensors:
+
+	constant - we can directly assign and get its value using tf.constant and eval().
+	To create a 1D tensor constant of 5 elements, tf.constant([1,2,3,4,5],dtype=tf.int32)
+	a=tf.ones([5]) - creates a 1D tensor of all 5 elements as 1.
+	b=tf.zeros([5]) - all 0s.
+	a.get_shape() - returns shape of tensor.
+	tf.constant([1,2,3,4],[5,6,7,8],[1,3,5,7]) - creates a 3x4 matrix.
+	tf.ones([3,4]) - 3x4 matrix.
+	We can reshape a tensor using .reshape():
+		a=tf.constant([1,2,3,4,5,6])
+		a1=tf.reshape(a,[3,2]) - will be reshaped to a matrix of 3x2.
+		
+	Variables in Tensorflow:
+	
+		variable - we need to create a variable using tf.Variable() and need to call init = tf.global_variables_initializer() and run sess.run(init) or init.eval() to initialize a variable.
+		sess.run(init) is roughly equal to init.eval().
+		tf.random_normal([5],mean = 1, stddev=0.35) - creates 5 random values.
+		tf.random_uniform([10,1],minval=1,maxval=7,dtype=tf.int32) - generates a 10x1 matrix of random values between 1 and 6.
+		tf.concat(values=[dice1, dice2, dice_sum], axis=1)
+		
+	Descending into ML:
+		- Supervised Learning.
+		- Linear model - y' = y0 + w0x ( y0 - bias, w0 - weight(slope))
+		- Training, Loss, Loss function - MSE.
+	
+	Reducing Loss:
+		- For linear regression, initial values for b and w0 is not important. We'll set them as 0. Then compute y, find loss function(Squared error)
+		  and then re-evaluate the label after setting new b and w0. This stops until there's no loss or loss is very less. Model is said to be converged.
+		  
+		- Gradient Descent: The mechanism of finding the convergence point is gradient descent. It's very difficult to find the loss at all possible 
+		  values of w0. So we use GD technique to find out the convergence point where loss is min. The plot of loss vs w0 is convex.(e^2y.sinx).
+		  GD is nothing but a partial derivative( how much the function changes when we perturb one variable a bit). It's a vector and always points in the
+		  direction of steepest increase in loss function. So our algorithm steps in the direction of negative gradient. to reduce loss.
+		  
+		- Step Size: To determine the next point, gradient is multiplied by a scalar known as step size or learning rate. If step size is too small,
+		  it takes much time to reach the convergence and if it is too large, it goes horribly from one end of convex curve to other overshooting the 
+		  point of convergence. The very popular method used is Goldilocks learning rate.
+		  
+		- Stochastic Gradient Descent: In practical gradient descent will not be computed for all the samples in the dataset as the records will be in billion.
+		  SGD deals with only one example per iteration. Mini batch SGD deals with 10-1000 examples per iteration.
+		  
+05/01/2018 - First steps with tensorflow
+
+	LinearReggressor: 
+		
+	There are some steps formulated in in this course to be followed for tensorflow ML program:
+		
+		- Import libraries:
+			
+			import tensorflow as tf
+			import pandas as pd
+			import numpy as np
+			from sklearn import metrics
+			from tensorflow.python.data import Dataset
+			from matplotlib import pyplot as plt
+			from matplotlib import gridspec
+			from matplotlib import cm
+			
+		- Load dataset from a local file or url using pd.read_csv
+		
+			data = pd.read_csv("https://storage.googleapis.com/mledu-datasets/california_housing_train.csv", sep=",")
+			
+		- Shuffle the data using pd.reindex() to make sure we don't get any ordering effect which might harm stochastic gradient descent.
+		
+			data = data.reindex(np.random.permutation(data.index))
+		
+		- Examine the data using pd.describe()
+		
+			data.describe()
+			
+		- Building Model ( Here's where steps come)
+		
+		For linear regression, we'll use LinearRegressor provided by tf.estimator API.
+		
+		1) Define features and configure feature columns:
+		
+		Inorder to import our feature data into tensorflow, we need to specify the data type of each feature column. We indicate feature data type through a constructore called tf.feature_column
+			
+			my_feature = data['total_rooms']
+			feature_column = tf.feature_column.numeric_column('total_rooms')
+			
+			Note: feature_column just contains the description of the feature and not the feature itself.
+			
+		2) Define target:
+		
+			target = data['median_house_value']
+			
+		3) Configure LinearReggressor:
+		
+			We'll train our model using gradient descent optimizer which implements mini batch SGD. learning_rate argument controls the size of gradient step.
+			Inorder to ensure that the magnitude of the gradient descent does not go beyond large value, which cause it to fail, we'll limit the magnitude to 5.
+			
+			my_optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0001)
+			my_optimizer = tf.contrib.estimator.clip_gradients_by_norm(my_optimizer,5)
+		    linear_regressor = tf.estimator.LinearRegressor(optimizer = my_optimizer,feature_columns=feature_column)
+			
+		4) Define input function:
+		
+			Inorder to provide data to linear_regressor, we need to define input function. This fuction takes parameters: feature, target and an integer representing the batch size.
+			It returns a tuple (feature, target) of Dataset object. The following operations are performed:
+			-> First the pandas dataframe feature is converted into a dict of numpy arrays. 
+			-> A Dataset object is created from the existing data( feature,target) through Dataset.from_tensor_slices(feature,target) method.
+			-> Data is splitted into batches and are returned through make_one_shot_iterator.get_next() method.
+			
+			Note: This input function is used for al three purposes: train(), evaluate() and predict().
+			
+		5) Next step is to train the model. 
+			
+			_=linear_regressor.train(input_fn=lambda:my_input_fn(my_feature,target),steps=100)
+			
+		6) Next evaluate the model. Here we'll make predictions on the training data. Training error tells us how well our model fits the training data, 
+		   but it doesn't tell us how well our model generalizes to a new data. 
+		   We'll use 
+		   linear_regressor.predict(input_fn=my_input_fn(my_feature,target)) to predict. 
+		   We'll then format our prediction data into a numpy arrays
+		   to compute error metrics.
+		   
+		   pred = np.array(item['predictions'][0] for item in predictions)
+		   MSE = metrics.mean_squared_error(pred,targets)
+		   RMSE = math.sqrt(MSE)
+		   
+		Next we'll create a new dataframe and keep only predictions and target and examine it using describe() to see how the mean value relates to 
+		the prediction mean and other quartiles.
+		
+		We'll then draw the regression line we've learnt against the scatter plot of our data. This gives us visualization of how our model fits the 
+		line with the original data. For plotting the line, get the weights and bias of the model using:
+		linear_regressor.get_variable_value('linear/linear_model/total_rooms/weights')[0] and
+		linear_regressor.get_variable_value('linear/linear_model/bias_weights')
+		
+05/07/2018 - Synthetic features and outliers:
+	
+	We can create an arbitrary feature from the existing features. e.g creating a feature which is ratio of two other.
+	
+	Outliers can be detected using hist() of a particular column and limit the max or min value of that particular column to some value.
+	
+05/08/2017 - Generalization
+
+Peril of Overfitting:
+	
+	An overfit model gets a low loss on training, but does a poor job in predicting.
+	
+Splitting Training and Test set:
+
+	Make sure the test data satisfies following two conditions:
+		-> Is large enough to yield statistically meaningful results.
+		-> Is representative of the dataset as a whole. Don't pick test dataset with characteristics different from training set.
+		
+Validation:
+
+	Split the dataset into 3: 
+		-> Training set - Train the model.
+		-> Validation set - Evaluate the model on this dataset and find the best model that fits the validation data best.
+		-> Test set - Use the final model to predict test data.
+		
+	The main advantage of having validation dataset is to avoid exposure to test dataset as it results in overfitting.
+	
+		  
+05/12/2018 - Representation
+
+-> Mapping raw data into features:
+	-> We can extract street name from logs and use it as a feature. Strings cannot be used as a feature in ML. So we can do one hot encoding 
+	for converting strings to numbers.
+		-> One hot encoding:
+			-> Create a vocabulary with list of all street names.
+			-> Create a binary vector with all 0s and only 1 corresponding to given string. e.g: [0,0,0,1,0] -> totally we have 5 street names in vocab.
+		-> Another way is to create dummy encoding:
+			-> If there are only discrete categories available, we can do dummy encoding.
+			e.g: 0 - USA, 1 - India, 2 - England.
+			
+Qualities of a good feature: 
+			
+			-> A feature should have a handful of non zero values.
+			-> Should be obvious and meaningful.
+			-> Should not be take magical values e.g watch time is -1.0 
+			-> Should not have crazy outliers.
+
+Good Habits in Machine Learning:
+			
+			-> Visualize: Visualize and understand the data. Use histograms, scatterplots, etc.
+			-> Debug: Duplicate examples? Missing values? Outliers? Do training and validation data similar?.
+			
+		Process of creating feature vector from raw data is called feature engineering.
+				
+Cleaning data:
+			
+			-> ML engrs should spend enormous amount of time in cleaning data.
+			-> Scaling:
+					Floating point features should be scaled between the range -1 to +1.
+					Another method to scale is to use its z score (value - mean)/(stddev). It tells how many SDs th value is away from mean.
+			-> Dealing with outliers:
+					Outliers can be detected in the input features through histogram plots and can be clipped to some max/min value.
+			-> Binning:
+					It's better to convert latitude feature into bin intervals, as there will not be linear relationship between latitude and target value.
+					
+05/16/2018 - Feature Crossing:
+			
+			-> Multiplying 2 or more features to create a synthetic feature is called feature crossing.
+			-> Feature crossing 2 one hot encoded features will result in producing logical conjunctions between 2 features.
+			
+			
